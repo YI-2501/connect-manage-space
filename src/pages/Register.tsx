@@ -7,22 +7,64 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && email && password) {
+    
+    if (!name || !email || !password) {
       toast({
-        title: "Inscription réussie",
-        description: "Vous allez être redirigé vers la page de connexion.",
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive",
       });
-      setTimeout(() => navigate("/login"), 1000);
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 6 caractères",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signUp(email, password, name);
+      
+      if (error) {
+        toast({
+          title: "Erreur d'inscription",
+          description: error.message || "Un problème est survenu",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Inscription réussie",
+          description: "Vous allez être redirigé vers la page de connexion.",
+        });
+        setTimeout(() => navigate("/login"), 1000);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite, veuillez réessayer",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,6 +89,7 @@ const Register = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -59,6 +102,7 @@ const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           
@@ -71,12 +115,22 @@ const Register = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
-            <UserPlus className="mr-2 h-5 w-5" />
-            S'inscrire
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            {isLoading ? (
+              <span className="inline-flex items-center">
+                <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full"></span>
+                Inscription...
+              </span>
+            ) : (
+              <>
+                <UserPlus className="mr-2 h-5 w-5" />
+                S'inscrire
+              </>
+            )}
           </Button>
         </form>
 

@@ -7,22 +7,54 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { LogIn, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simuler une connexion réussie
-    if (email && password) {
+    
+    if (!email || !password) {
       toast({
-        title: "Connexion réussie",
-        description: "Vous allez être redirigé vers votre profil.",
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive",
       });
-      setTimeout(() => navigate("/admin"), 1000);
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast({
+          title: "Erreur de connexion",
+          description: error.message || "Vérifiez vos identifiants",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Connexion réussie",
+          description: "Vous allez être redirigé vers votre profil.",
+        });
+        navigate("/admin");
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite, veuillez réessayer",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,6 +79,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           
@@ -59,12 +92,22 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
-            <LogIn className="mr-2 h-5 w-5" />
-            Se connecter
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            {isLoading ? (
+              <span className="inline-flex items-center">
+                <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full"></span>
+                Connexion...
+              </span>
+            ) : (
+              <>
+                <LogIn className="mr-2 h-5 w-5" />
+                Se connecter
+              </>
+            )}
           </Button>
         </form>
 
